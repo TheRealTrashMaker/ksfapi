@@ -181,7 +181,8 @@ def kline():
         period = request.args.get('period', '1mo')
         if stock_code:
             response = get_kline_data(stock_code, period)
-            return jsonify(response)
+            if "error" in str(response):
+                return kline_pre(stock_code)
         else:
             return kline_pre(stock_code)
     except:
