@@ -183,6 +183,8 @@ def kline():
             response = get_kline_data(stock_code, period)
             if "error" in str(response):
                 return kline_pre(stock_code)
+            else:
+                return jsonify(response)
         else:
             return kline_pre(stock_code)
     except:
