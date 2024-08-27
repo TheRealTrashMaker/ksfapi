@@ -182,13 +182,13 @@ def kline():
         if stock_code:
             response = get_kline_data(stock_code, period)
             if "error" in str(response):
-                return kline_pre(stock_code)
+                return jsonify(kline_pre(stock_code))
             else:
                 return jsonify(response)
         else:
-            return kline_pre(stock_code)
+            return jsonify(kline_pre(stock_code))
     except:
-        return kline_pre(stock_code)
+        return jsonify(kline_pre(stock_code))
 
 
 
@@ -364,4 +364,4 @@ def get_nifty50_data():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5588, debug=True)
+    app.run(host='0.0.0.0', port=5688, debug=True)
