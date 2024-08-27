@@ -77,6 +77,7 @@ def nse_charter(regulation):
 def kline_pre(stock_code):
     regulation = stock_code
     chart_data = nse_charter(regulation)
+    print(chart_data)
     return_data = {
         "categories":[
             datetime.fromtimestamp(chart_data["close_prices"][0][0]/1000).strftime('%Y/%m/%d')
@@ -87,9 +88,9 @@ def kline_pre(stock_code):
       "data": [
         [
           chart_data["close_prices"][0][1],
-          chart_data["close_prices"][1][1],
           chart_data["close_prices"][0][1],
-          chart_data["close_prices"][1][1],
+          chart_data["close_prices"][0][1],
+          chart_data["close_prices"][0][1],
         ]
       ],
       "name": "Kline"
@@ -98,7 +99,7 @@ def kline_pre(stock_code):
         "stock": regulation
 
     }
-    return jsonify(return_data)
+    return return_data
 
 if __name__ == '__main__':
-    kline_pre()
+    print(kline_pre("BRACEPORT"))
