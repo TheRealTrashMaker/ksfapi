@@ -1,6 +1,6 @@
 from datetime import datetime
+
 import requests
-from flask import Flask, request, jsonify
 
 
 def nse_charter(regulation):
@@ -31,14 +31,14 @@ def nse_charter(regulation):
     session = requests.Session()
     session.get(url='https://www.nseindia.com/', headers=headers)
     response = session.get('https://www.nseindia.com/api/quote-equity', params=params,
-                            headers=headers)
+                           headers=headers)
     try:
         params_S = {
             'index': response.json()["info"]["identifier"],
             'type': 'symbol',
         }
         response_s = session.get('https://www.nseindia.com/api/chart-databyindex', params=params_S,
-                                headers=headers)
+                                 headers=headers)
         json_data = response_s.json()
 
         def filter_continuous_prices(data):
@@ -60,10 +60,10 @@ def nse_charter(regulation):
         new_json_data = {
             "companyName": response.json()["info"]["companyName"],
             "close_prices": filtered_datas,
-            "current_price": response.json()["priceInfo"]["lastPrice"],                 # 当前的股票价格
-            "percent_change": response.json()["priceInfo"]["change"],    # 今日股票价格的百分比变化
-            "prasent": response.json()["priceInfo"]["pChange"],                              # 表示当前的变化值
-            "stock": json_data['name']                          # 股票的名称
+            "current_price": response.json()["priceInfo"]["lastPrice"],  # 当前的股票价格
+            "percent_change": response.json()["priceInfo"]["change"],  # 今日股票价格的百分比变化
+            "prasent": response.json()["priceInfo"]["pChange"],  # 表示当前的变化值
+            "stock": json_data['name']  # 股票的名称
         }
         # 打印结果
         return new_json_data
@@ -74,32 +74,34 @@ def nse_charter(regulation):
         }
     return new_json_data
 
+
 def kline_pre(stock_code):
     regulation = stock_code
     chart_data = nse_charter(regulation)
     print(chart_data)
     return_data = {
-        "categories":[
-            datetime.fromtimestamp(chart_data["close_prices"][0][0]/1000).strftime('%Y/%m/%d')
+        "categories": [
+            datetime.fromtimestamp(chart_data["close_prices"][0][0] / 1000).strftime('%Y/%m/%d')
         ],
         "period": "1mo",
         "series": [
-    {
-      "data": [
-        [
-          chart_data["close_prices"][0][1],
-          chart_data["close_prices"][0][1],
-          chart_data["close_prices"][0][1],
-          chart_data["close_prices"][0][1],
-        ]
-      ],
-      "name": "Kline"
-    }
-  ],
+            {
+                "data": [
+                    [
+                        chart_data["close_prices"][0][1],
+                        chart_data["close_prices"][0][1],
+                        chart_data["close_prices"][0][1],
+                        chart_data["close_prices"][0][1],
+                    ]
+                ],
+                "name": "Kline"
+            }
+        ],
         "stock": regulation
 
     }
     return return_data
+
 
 if __name__ == '__main__':
     print(kline_pre("BRACEPORT"))

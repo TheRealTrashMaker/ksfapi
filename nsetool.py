@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import yfinance as yf
 import random
+from bsetool import get_stock_history
 from datetime import datetime, timedelta
 app = Flask(__name__)
 CORS(app)  # This will enable CORS for all routes
@@ -10,7 +11,7 @@ from kline_pre import kline_pre
 # 代码列表
 def get_stock_codes():
     return [
-            'INFY', 'TCS', 'RELIANCE', 'HDFCBANK', 'ITC', 'KOTAKBANK', 'SBIN', 'HINDUNILVR', 'ICICIBANK', 'BAJFINANCE',
+            'MAKERSL.BSE', 'INFY', 'TCS', 'RELIANCE', 'HDFCBANK', 'ITC', 'KOTAKBANK', 'SBIN', 'HINDUNILVR', 'ICICIBANK', 'BAJFINANCE',
         'ADANIPORTS', 'ASIANPAINT', 'AUROPHARMA', 'AXISBANK', 'BAJAJ-AUTO', 'BAJAJFINSV', 'BAJAJHLDNG', 'BPCL',
         'BHARTIARTL', 'INFRATEL', 'COALINDIA', 'DRREDDY', 'EICHERMOT', 'GAIL', 'GRASIM', 'HCLTECH', 'HDFC',
         'HEROMOTOCO', 'HINDALCO', 'HINDZINC', 'JSWSTEEL', 'M&M', 'MARUTI', 'NESTLEIND', 'NTPC', 'ONGC',
@@ -188,7 +189,10 @@ def kline():
         else:
             return jsonify(kline_pre(stock_code))
     except:
-        return jsonify(kline_pre(stock_code))
+        try:
+            return jsonify(kline_pre(stock_code))
+        except:
+            return jsonify(get_stock_history(stock_name=stock_code))
 
 
 
@@ -364,4 +368,5 @@ def get_nifty50_data():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5688, debug=True)
+    # print(get_kline_data(stock_code="MAKERSL.BSE"))
+    app.run(host='0.0.0.0', port=5598, debug=True)
