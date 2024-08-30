@@ -372,4 +372,4 @@ def get_nifty50_data():
 
 if __name__ == '__main__':
     # print(get_kline_data(stock_code="MAKERSL.BSE"))
-    app.run(host='0.0.0.0', port=5598, debug=True)
+    app.run(host='0.0.0.0', port=5599, debug=True)
