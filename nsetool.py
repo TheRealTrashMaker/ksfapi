@@ -1,17 +1,19 @@
+import random
+
+import yfinance as yf
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import yfinance as yf
-import random
+
 from bsetool import get_stock_history
-from datetime import datetime, timedelta
+
 app = Flask(__name__)
 CORS(app)  # This will enable CORS for all routes
-from kline_pre import kline_pre
+
 
 # 代码列表
 def get_stock_codes():
     return [
-            'MAKERSL.BSE', 'INFY', 'TCS', 'RELIANCE', 'HDFCBANK', 'ITC', 'KOTAKBANK', 'SBIN', 'HINDUNILVR', 'ICICIBANK', 'BAJFINANCE',
+        'MAKERSL.BSE', 'INFY', 'TCS', 'RELIANCE', 'HDFCBANK', 'ITC', 'KOTAKBANK', 'SBIN', 'HINDUNILVR', 'ICICIBANK', 'BAJFINANCE',
         'ADANIPORTS', 'ASIANPAINT', 'AUROPHARMA', 'AXISBANK', 'BAJAJ-AUTO', 'BAJAJFINSV', 'BAJAJHLDNG', 'BPCL',
         'BHARTIARTL', 'INFRATEL', 'COALINDIA', 'DRREDDY', 'EICHERMOT', 'GAIL', 'GRASIM', 'HCLTECH', 'HDFC',
         'HEROMOTOCO', 'HINDALCO', 'HINDZINC', 'JSWSTEEL', 'M&M', 'MARUTI', 'NESTLEIND', 'NTPC', 'ONGC',
@@ -102,7 +104,7 @@ def get_stock_codes():
         'MANINFRA', 'MSPL', 'TNPL', 'UNITECH', 'SUNTV', 'BHAGWATI', 'GSS', 'KMSUGAR', 'BIOFILCHEM', 'NCLRESE',
         'SUMEETIND', 'RAMCOIND', 'STER', 'UNITECH', 'BANKBEES', 'VISAKAIND', 'VSTTILLERS', 'ZICOM', 'UBHOLDINGS',
         'PLASTIBLEN', 'KAVVERITEL', 'PRECISION', 'MEGH', 'GESHIP', 'GBGLOBAL', 'PENINLAND', 'MAANALU', 'THAKRAL',
-        'CIGNITITEC','SANSTAR','DECCAN','POBS'
+        'CIGNITITEC', 'SANSTAR', 'DECCAN', 'POBS'
     ]
 
 
@@ -111,7 +113,7 @@ def get_stock_info(page, per_page=10, sort_by=None, query_code=None):
     if query_code and query_code not in stock_codes:
         stock_codes.append(query_code)
     random.shuffle(stock_codes)
-    
+
     start = (page - 1) * per_page
     end = start + per_page
     paginated_codes = stock_codes[start:end]
@@ -178,22 +180,15 @@ def stock_trend():
 @app.route('/kline', methods=['GET'])
 def kline():
     stock_code = request.args.get('stock_code')
+    if not stock_code:
+        return None
+    period = request.args.get('period', '1mo')
     try:
-        period = request.args.get('period', '1mo')
-        if stock_code:
-            response = get_kline_data(stock_code, period)
-            if "error" in str(response):
-                return jsonify(kline_pre(stock_code))
-            else:
-                return jsonify(response)
-        else:
-            return jsonify(kline_pre(stock_code))
-    except:
-        try:
-            return jsonify(kline_pre(stock_code))
-        except:
-            return jsonify(get_stock_history(stock_name=stock_code))
-
+        response = get_kline_data(stock_code, period)
+        return jsonify(response)
+    except Exception as e:
+        app.logger.error(f"Error fetching kline data for {stock_code}: {e}")
+        return f"Error fetching kline data for {stock_code}: {e}"
 
 
 def get_stock_trend(stock_code):
@@ -222,15 +217,22 @@ def get_stock_trend(stock_code):
         return {'error': 'No data available for the specified stock code.'}
 
 
-def get_kline_data(stock_code, period='1mo'):
+def clean_stock_code(stock_code):
+    """
+    Clean the stock code by removing unwanted characters and ensuring the suffix.
+    """
     if '(' in stock_code:
-        stock_code = stock_code.split('(')[0].strip()
+        return stock_code.split('(')[0].strip()
+    return stock_code if stock_code.endswith('.NS') else f"{stock_code}.NS"
 
-    ticker = f"{stock_code}.NS" if not stock_code.endswith('.NS') else stock_code
-    stock = yf.Ticker(ticker)
+
+def get_kline_data(stock_code, period='1mo'):
+    ticker = clean_stock_code(stock_code)
     try:
-        hist = stock.history(period=period)
+        stock = yf.Ticker(ticker)
+        hist = stock.history(period=period, timeout=1)
         if not hist.empty:
+            # Keeping the original data structure
             return {
                 'stock': stock_code,
                 'period': period,
@@ -241,8 +243,11 @@ def get_kline_data(stock_code, period='1mo'):
                 }]
             }
         else:
-            return {'error': f'No data available for {stock_code} with period {period}.'}
+            return get_stock_history(stock_code)
     except Exception as e:
+        # Optionally log the error for debugging
+        import logging
+        logging.error(f"Failed to fetch data for {ticker}: {e}")
         return {'error': str(e)}
 
 
@@ -305,12 +310,12 @@ def check_stock():
     stock_code = request.args.get('stock_code')
     data_type = request.args.get('data_type', 'stock')  # 'stock' or 'kline'
     period = request.args.get('period', '1mo')
-    
+
     if not stock_code:
         return jsonify({'error': 'Stock code is required.'}), 400
 
     stock_codes = get_stock_codes()
-    
+
     response = {'status': 'not_found'}
 
     if stock_code in stock_codes:
@@ -324,7 +329,7 @@ def check_stock():
         response['data'] = kline_data
     else:
         return jsonify({'error': 'Invalid data type. Choose either "stock" or "kline".'}), 400
-    
+
     return jsonify(response)
 
 
@@ -333,10 +338,10 @@ def fetch_stock_data(ticker):
     try:
         stock = yf.Ticker(ticker)
         data = stock.history(period="1mo")
-        
+
         if data.empty:
             return {"error": f"No data available for ticker: {ticker}"}
-        
+
         close_prices = data['Close'].tolist()
         current_price = data['Close'].iloc[-1]
         percent_change = ((close_prices[-1] - close_prices[0]) / close_prices[0]) * 100
@@ -350,11 +355,13 @@ def fetch_stock_data(ticker):
     except Exception as e:
         return {"error": str(e)}
 
+
 @app.route('/get_sensex_data', methods=['GET'])
 def get_sensex_data():
     ticker = '^BSESN'
     stock_data = fetch_stock_data(ticker)
     return jsonify(stock_data)
+
 
 @app.route('/get_nifty50_data', methods=['GET'])
 def get_nifty50_data():
