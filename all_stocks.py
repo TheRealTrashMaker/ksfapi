@@ -1,7 +1,10 @@
-import requests
 import json
-from flask import Flask, request, jsonify
+import time
+
+import requests
+from flask import Flask, jsonify
 from flask_cors import CORS
+
 app = Flask(__name__)
 CORS(app)  # This will enable CORS for all routes
 
@@ -81,8 +84,26 @@ def get_all_stocks():
     data = json.dumps(data, separators=(',', ':'))
     response = requests.post(url, headers=headers, data=data)
     for stock in response.json()["data"]:
-        stocks_list.append(stock["d"][0])
+        append_data = {
+
+            "close_prices": [
+                [
+                    int(time.time() * 1000),
+                    stock["d"][6]
+                ]
+            ],
+            "companyName": "MAKERS LABORATORIES LTD.-$",
+            "current_price": stock["d"][6],
+            "percent_change": stock["d"][12],
+            "prasent": 0,
+            "stock": stock["d"][1]
+
+        }
+        stocks_list.append(append_data)
     return jsonify(stocks_list)
 
+
 if __name__ == '__main__':
+    # all_stocks = get_all_stocks()
+    # print(all_stocks)
     app.run(host='0.0.0.0', port=5608, debug=True)
