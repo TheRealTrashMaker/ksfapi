@@ -298,9 +298,6 @@ def fetch_stock_info(stock_code):
         }
     else:
         return {'error': f"No data for {stock_code}"}
-    
-
-
 
 
 @app.route('/check_stock', methods=['GET'])
@@ -329,7 +326,6 @@ def check_stock():
         return jsonify({'error': 'Invalid data type. Choose either "stock" or "kline".'}), 400
     
     return jsonify(response)
-
 
 
 # 获取所有数据
