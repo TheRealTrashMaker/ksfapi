@@ -106,4 +106,4 @@ def get_all_stocks():
 if __name__ == '__main__':
     # all_stocks = get_all_stocks()
     # print(all_stocks)
-    app.run(host='0.0.0.0', port=5608, debug=True)
+    app.run(host='0.0.0.0', port=5608, debug=False)
