@@ -40,7 +40,7 @@ def get_stockcode(stock_name):
         "flag": "site"
     }
     # 发送GET请求获取响应
-    response = requests.get(url, headers=headers, params=params,timeout=1)
+    response = requests.get(url, headers=headers, params=params,timeout=5)
     # 使用正则表达式解析股票代码
     stock_code = re.findall(f"{stock_name.lower()}/(.+?)/", response.text)
     # 检查是否找到股票代码
