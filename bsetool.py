@@ -40,7 +40,7 @@ def get_stockcode(stock_name):
         "flag": "site"
     }
     # 发送GET请求获取响应
-    response = requests.get(url, headers=headers, params=params)
+    response = requests.get(url, headers=headers, params=params,timeout=1)
     # 使用正则表达式解析股票代码
     stock_code = re.findall(f"{stock_name.lower()}/(.+?)/", response.text)
     # 检查是否找到股票代码
@@ -49,6 +49,77 @@ def get_stockcode(stock_name):
     else:
         return None
 
+def get_india_dates():
+    # 获取当前日期
+    current_date = datetime.now()
+
+    # 格式化当前日期为字符串
+    current_date_str = current_date.strftime("%d-%m-%Y")
+
+    # 计算30天前的日期
+    thirty_days_ago = current_date - timedelta(days=30)
+
+    # 格式化30天前的日期为字符串
+    thirty_days_ago_str = thirty_days_ago.strftime("%d-%m-%Y")
+
+    # 返回两个日期字符串
+    return thirty_days_ago_str, current_date_str
+
+def nes_market(stock_name):
+    """
+    获取行情
+    :param stock_name: SYMBOL
+    :return:
+    """
+    url = 'https://www.nseindia.com/api/historical/cm/equity'
+    headers = {
+        "accept": "*/*",
+        "accept-language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
+        "cache-control": "no-cache",
+        "pragma": "no-cache",
+        "priority": "u=1, i",
+        "referer": f"https://www.nseindia.com/get-quotes/equity?symbol={stock_name}",
+        "sec-ch-ua-mobile": "?0",
+        "sec-fetch-dest": "empty",
+        "sec-fetch-mode": "cors",
+        "sec-fetch-site": "same-origin",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36 Edg/127.0.0.0",
+        'x-requested-with': 'XMLHttpRequest'
+    }
+
+    try:
+        data_now = get_india_dates()
+        rise_time = data_now[0]
+        terminal_time = data_now[1]
+        params = {
+            "symbol": stock_name,
+            "series": '["SM","ST"]',
+            "from": rise_time,
+            "to": terminal_time
+        }
+        session = requests.Session()
+        session.get(url='https://www.nseindia.com/', headers=headers, verify=False, timeout=5)
+        response = session.get(url, headers=headers, params=params, timeout=5)
+        unclean_data = response.json()["data"]
+        clean_date_date = []
+        clean_chart_data = []
+        for data in unclean_data:
+            clean_date_date.append(datetime.strptime(data["CH_TIMESTAMP"], "%Y-%m-%d").strftime("%Y/%m/%d"))
+            clean_chart_data.append([str(data["CH_OPENING_PRICE"]), str(data["CH_CLOSING_PRICE"]), str(data["CH_TRADE_LOW_PRICE"]), str(data["CH_TRADE_HIGH_PRICE"])])
+        return_data = {
+            "categories": clean_date_date,
+            "period": "1mo",
+            "series": [
+                {
+                    "data": clean_chart_data,
+                    "name": "Kline"
+                }
+            ],
+            "stock": stock_name
+        }
+        return return_data
+    except:
+        return None
 
 def get_stock_info_pre(stock_code):
     """
@@ -115,13 +186,12 @@ def get_stock_history(stock_name):
     stock_code = get_stockcode(stock_name=stock_name)
 
     # 判断是否成功获取到股票代码
-    if stock_code:
+    if stock_code != None:
         # 如果获取到股票代码，调用函数获取股票历史数据
         stock_history_pre = get_bse_stock_hitory(stock_name=stock_name,stock_code=stock_code)
         return stock_history_pre
     else:
-        # 如果未获取到股票代码，返回None
-        return None
+        return nes_market(stock_name=stock_name)
 
 # def convert_date_format(date_str):
 #     """
@@ -203,7 +273,7 @@ def get_bse_stock_hitory(stock_name, stock_code):
         clean_date_date.append(clean_date(date))
     clean_chart_data = []
     for i in range(len(unclean_data["OpenData"][0]["Open"].split(","))):
-        clean_chart_data.append([unclean_data["OpenData"][0]["Open"].split(",")[i], unclean_data["HighData"][0]["High"].split(",")[i], unclean_data["LowData"][0]["Low"].split(",")[i], unclean_data["CloseData"][0]["Close"].split(",")[i]])
+        clean_chart_data.append([unclean_data["OpenData"][0]["Open"].split(",")[i], unclean_data["CloseData"][0]["Close"].split(",")[i], unclean_data["LowData"][0]["Low"].split(",")[i], unclean_data["HighData"][0]["High"].split(",")[i]])
     return_data = {
             "categories": clean_date_date,
             "period": "1mo",
@@ -232,4 +302,5 @@ def clean_date(date_unclean):
 
 if __name__ == '__main__':
     # print(get_stock_history("POBS"))
+    print(get_stockcode(stock_name="BRACEPORT"))
     pass

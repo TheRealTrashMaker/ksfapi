@@ -1,5 +1,7 @@
 import random
+from datetime import datetime, timedelta
 
+import requests
 import yfinance as yf
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -148,6 +150,78 @@ def get_stock_info(page, per_page=10, sort_by=None, query_code=None):
     return stock_info_array
 
 
+def get_india_dates():
+    # 获取当前日期
+    current_date = datetime.now()
+
+    # 格式化当前日期为字符串
+    current_date_str = current_date.strftime("%d-%m-%Y")
+
+    # 计算30天前的日期
+    thirty_days_ago = current_date - timedelta(days=30)
+
+    # 格式化30天前的日期为字符串
+    thirty_days_ago_str = thirty_days_ago.strftime("%d-%m-%Y")
+
+    # 返回两个日期字符串
+    return thirty_days_ago_str, current_date_str
+
+def nes_market(stock_name):
+    """
+    获取行情
+    :param stock_name: SYMBOL
+    :return:
+    """
+    url = 'https://www.nseindia.com/api/historical/cm/equity'
+    headers = {
+        "accept": "*/*",
+        "accept-language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
+        "cache-control": "no-cache",
+        "pragma": "no-cache",
+        "priority": "u=1, i",
+        "referer": f"https://www.nseindia.com/get-quotes/equity?symbol={stock_name}",
+        "sec-ch-ua-mobile": "?0",
+        "sec-fetch-dest": "empty",
+        "sec-fetch-mode": "cors",
+        "sec-fetch-site": "same-origin",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36 Edg/127.0.0.0",
+        'x-requested-with': 'XMLHttpRequest'
+    }
+
+    try:
+        data_now = get_india_dates()
+        rise_time = data_now[0]
+        terminal_time = data_now[1]
+        params = {
+            "symbol": stock_name,
+            "series": '["SM","ST"]',
+            "from": rise_time,
+            "to": terminal_time
+        }
+        session = requests.Session()
+        session.get(url='https://www.nseindia.com/', headers=headers, verify=False, timeout=1)
+        response = session.get(url, headers=headers, params=params, timeout=1)
+        print(response.json())
+        unclean_data = response.json()["data"]
+        clean_date_date = []
+        clean_chart_data = []
+        for data in unclean_data:
+            clean_date_date.append(datetime.strptime(data["CH_TIMESTAMP"], "%Y-%m-%d").strftime("%Y/%m/%d"))
+            clean_chart_data.append([data["CH_OPENING_PRICE"], data["CH_CLOSING_PRICE"], data["CH_TRADE_LOW_PRICE"], data["CH_TRADE_HIGH_PRICE"]])
+        return_data = {
+            "categories": clean_date_date,
+            "period": "1mo",
+            "series": [
+                {
+                    "data": clean_chart_data,
+                    "name": "Kline"
+                }
+            ],
+            "stock": stock_name
+        }
+    except:
+        return None
+
 @app.route('/stocks', methods=['GET'])
 def stocks():
     try:
@@ -183,11 +257,8 @@ def kline():
     if not stock_code:
         print(stock_code)
         return None
-    if stock_code == "BRACEPORT" :
-        period = "max"
-    else:
 
-        period = request.args.get('period', '1mo')
+    period = request.args.get('period', '1mo')
     try:
         response = get_kline_data(stock_code, period)
         return jsonify(response)
@@ -376,5 +447,5 @@ def get_nifty50_data():
 
 
 if __name__ == '__main__':
-    # print(get_kline_data(stock_code="MAKERSL.BSE"))
+    # nes_market(stock_name="BRACEPORT")
     app.run(host='0.0.0.0', port=5609, debug=False)
