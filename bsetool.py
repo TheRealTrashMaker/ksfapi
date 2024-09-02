@@ -263,10 +263,8 @@ def get_bse_stock_hitory(stock_name, stock_code):
         "mode": "bseL",
         "fromdate": f"{gen_time()}-01:01:00-AM"
     }
-    print(params)
     response = requests.post(url, headers=headers, params=params)
     unclean_data = json.loads(response.json()["getDatResult"])["DataInputValues"][0]
-    print(unclean_data)
     clean_date_date = []
     unclean_date_data = unclean_data["DateData"][0]["Date"].split(",")
     for date in unclean_date_data:
