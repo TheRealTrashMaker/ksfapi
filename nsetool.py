@@ -448,4 +448,4 @@ def get_nifty50_data():
 
 if __name__ == '__main__':
     # nes_market(stock_name="BRACEPORT")
-    app.run(host='0.0.0.0', port=5609, debug=False)
+    app.run(host='0.0.0.0', port=5611, debug=False)
