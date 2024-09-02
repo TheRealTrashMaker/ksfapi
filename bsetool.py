@@ -1,10 +1,9 @@
-import json
 import time
-from datetime import datetime
 from bsedata.bse import BSE
-import requests
 import re
-
+import json
+from datetime import datetime, timedelta
+import requests
 def get_stockcode(stock_name):
     """
     根据股票名称获取股票代码。
@@ -118,112 +117,119 @@ def get_stock_history(stock_name):
     # 判断是否成功获取到股票代码
     if stock_code:
         # 如果获取到股票代码，调用函数获取股票历史数据
-        stock_history_pre = get_stock_history_pre(stock_code)
+        stock_history_pre = get_bse_stock_hitory(stock_name=stock_name,stock_code=stock_code)
         return stock_history_pre
     else:
         # 如果未获取到股票代码，返回None
         return None
 
+# def convert_date_format(date_str):
+#     """
+#     将给定的日期时间字符串从一种格式转换为另一种格式。
+#
+#     参数:
+#     date_str (str): 需要转换格式的原始日期时间字符串。
+#
+#     返回:
+#     str: 转换后的日期字符串。
+#
+#     说明:
+#     本函数的目的是将指定的日期时间字符串从原始格式转换为目标格式。
+#     原始格式包括"%a %b %d %Y %H:%M:%S"，目标格式为"%Y/%m/%d"。
+#     这种转换有助于统一日期格式，以便于显示或数据库存储。
+#     """
+#
+#     # 定义原始日期时间字符串的格式
+#     original_format = "%a %b %d %Y %H:%M:%S"
+#     # 定义目标日期字符串的格式
+#     target_format = "%Y/%m/%d"
+#
+#     # 解析原始日期时间字符串为datetime对象
+#     dt_object = datetime.strptime(date_str, original_format)
+#
+#     # 将datetime对象格式化为目标格式的字符串
+#     formatted_date_str = dt_object.strftime(target_format)
+#
+#     return formatted_date_str
 
-def get_stock_history_pre(stock_code):
-    # 定义请求头，用于模拟浏览器请求
+
+
+def gen_time():
+    now = datetime.now()
+
+    # 减去一个月（这里简单减去30天，不考虑月份长度或回滚）
+    # 注意：这种方法可能不适用于所有情况，特别是当月份天数不同时
+    one_month_ago = now - timedelta(days=30)
+
+    # 格式化日期为日-月-年
+    formatted_date = one_month_ago.strftime('%d-%m-%Y')
+    return formatted_date
+
+
+def get_bse_stock_hitory(stock_name, stock_code):
     headers = {
-        "accept": "*/*",
-        "accept-language": "zh-CN,zh;q=0.9",
-        "cache-control": "no-cache",
-        "origin": "https://www.bseindia.com",
-        "pragma": "no-cache",
-        "priority": "u=0, i",
-        "referer": "https://www.bseindia.com/",
+        "Accept": "*/*",
+        "Accept-Language": "zh-CN,zh;q=0.9",
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+        "Content-Length": "0",
+        "Origin": "https://charting.bseindia.com",
+        "Pragma": "no-cache",
+        "Referer": "https://charting.bseindia.com/index.html?SYMBOL=506919",
+        "Sec-Fetch-Dest": "empty",
+        "Sec-Fetch-Mode": "cors",
+        "Sec-Fetch-Site": "same-origin",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "X-Requested-With": "XMLHttpRequest",
         "sec-ch-ua": "\"Chromium\";v=\"128\", \"Not;A=Brand\";v=\"24\", \"Google Chrome\";v=\"128\"",
         "sec-ch-ua-mobile": "?0",
-        "sec-ch-ua-platform": "\"Windows\"",
-        "sec-fetch-dest": "empty",
-        "sec-fetch-mode": "cors",
-        "sec-fetch-site": "same-site",
-        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+        "sec-ch-ua-platform": "\"Windows\""
     }
-    # 定义请求URL
-    url = "https://api.bseindia.com/BseIndiaAPI/api/StockReachGraph/w"
-    # 定义请求参数，其中scripcode为股票代码，flag表示数据类型，fromdate和todate表示日期范围，seriesid为系列ID
+    url = "https://charting.bseindia.com/charting/RestDataProvider.svc/getDat"
     params = {
-        "scripcode": "506919",
-        "flag": "1M",
-        "fromdate": "",
-        "todate": "",
-        "seriesid": ""
+        "exch": "N",
+        "scode": "506919",
+        "type": "b",
+        "mode": "bseL",
+        "fromdate": f"{gen_time()}-01:01:00-AM"
     }
-    # 发送GET请求并获取响应
-    response = requests.get(url, headers=headers, params=params)
-    # 将响应内容转换为JSON格式
-    response_json = response.json()
-    # 初始化时间列表和价格列表
-    time_list = []
-    price_list = []
-    # 获取未清洗的数据
-    unclean_data = response.json()["Data"]
-    # 遍历未清洗的数据，提取时间并转换格式，提取价格信息
-    for data in json.loads(unclean_data):
-        time_list.append(convert_date_format(data["dttm"]))
-        price_list.append([data["vale1"], data["vale1"], data["vale1"], data["vale1"]])
-
-    # 构建清洗后的数据字典，包括时间类别、周期、股票名称和价格序列
-    clean_data = {
-        "categories": time_list,
-        "period": "1mo",
-        "series": [
-            {
-                "data": price_list,
-                "name": "Kline"
-            }
-        ],
-        "stock": response_json["Scripname"]
+    print(params)
+    response = requests.post(url, headers=headers, params=params)
+    unclean_data = json.loads(response.json()["getDatResult"])["DataInputValues"][0]
+    print(unclean_data)
+    clean_date_date = []
+    unclean_date_data = unclean_data["DateData"][0]["Date"].split(",")
+    for date in unclean_date_data:
+        clean_date_date.append(clean_date(date))
+    clean_chart_data = []
+    for i in range(len(unclean_data["OpenData"][0]["Open"].split(","))):
+        clean_chart_data.append([unclean_data["OpenData"][0]["Open"].split(",")[i], unclean_data["HighData"][0]["High"].split(",")[i], unclean_data["LowData"][0]["Low"].split(",")[i], unclean_data["CloseData"][0]["Close"].split(",")[i]])
+    return_data = {
+            "categories": clean_date_date,
+            "period": "1mo",
+            "series": [
+                {
+                    "data": clean_chart_data,
+                    "name": "Kline"
+                }
+            ],
+            "stock": stock_name
     }
-    # 返回清洗后的数据
-    return clean_data
-
-def test_bsedata():
-    b = BSE(update_codes=True)
-
-    # 尝试获取给定股票代码的股票信息
-    stock_code = b.getQuote("POBS")
-    data = b.getBhavCopyData(stock_code)
-    print(data)
+    return return_data
 
 
+def clean_date(date_unclean):
+    date_str = date_unclean.split()[0].replace('\/', '/')
 
+    # 将字符串转换为datetime对象
+    date_obj = datetime.strptime(date_str, '%d/%m/%Y')
 
-def convert_date_format(date_str):
-    """
-    将给定的日期时间字符串从一种格式转换为另一种格式。
-
-    参数:
-    date_str (str): 需要转换格式的原始日期时间字符串。
-
-    返回:
-    str: 转换后的日期字符串。
-
-    说明:
-    本函数的目的是将指定的日期时间字符串从原始格式转换为目标格式。
-    原始格式包括"%a %b %d %Y %H:%M:%S"，目标格式为"%Y/%m/%d"。
-    这种转换有助于统一日期格式，以便于显示或数据库存储。
-    """
-
-    # 定义原始日期时间字符串的格式
-    original_format = "%a %b %d %Y %H:%M:%S"
-    # 定义目标日期字符串的格式
-    target_format = "%Y/%m/%d"
-
-    # 解析原始日期时间字符串为datetime对象
-    dt_object = datetime.strptime(date_str, original_format)
-
-    # 将datetime对象格式化为目标格式的字符串
-    formatted_date_str = dt_object.strftime(target_format)
+    # 将datetime对象格式化为年/月/日格式
+    formatted_date_str = date_obj.strftime('%Y/%m/%d')
 
     return formatted_date_str
 
 
-
 if __name__ == '__main__':
     # print(get_stock_history("POBS"))
-    test_bsedata()
+    pass
