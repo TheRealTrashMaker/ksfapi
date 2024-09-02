@@ -181,8 +181,13 @@ def stock_trend():
 def kline():
     stock_code = request.args.get('stock_code')
     if not stock_code:
+        print(stock_code)
         return None
-    period = request.args.get('period', '1mo')
+    if stock_code == "BRACEPORT" :
+        period = "max"
+    else:
+
+        period = request.args.get('period', '1mo')
     try:
         response = get_kline_data(stock_code, period)
         return jsonify(response)
