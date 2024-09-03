@@ -49,7 +49,7 @@ def get_stockcode(stock_name):
     else:
         return None
 
-def get_india_dates():
+def get_india_dates(del_time):
     # 获取当前日期
     current_date = datetime.now()
 
@@ -57,7 +57,7 @@ def get_india_dates():
     current_date_str = current_date.strftime("%d-%m-%Y")
 
     # 计算30天前的日期
-    thirty_days_ago = current_date - timedelta(days=30)
+    thirty_days_ago = current_date - timedelta(days=del_time)
 
     # 格式化30天前的日期为字符串
     thirty_days_ago_str = thirty_days_ago.strftime("%d-%m-%Y")
@@ -65,6 +65,49 @@ def get_india_dates():
     # 返回两个日期字符串
     return thirty_days_ago_str, current_date_str
 
+def nes_market_realtime(stock_name):
+    headers = {
+        "accept": "application/json, text/javascript, */*; q=0.01",
+        "accept-language": "zh-CN,zh;q=0.9",
+        "cache-control": "no-cache",
+        "pragma": "no-cache",
+        "priority": "u=1, i",
+        "referer": f"https://www.nseindia.com/get-quotes/equity?symbol={stock_name}",
+        "sec-ch-ua": "\"Chromium\";v=\"128\", \"Not;A=Brand\";v=\"24\", \"Google Chrome\";v=\"128\"",
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-platform": "\"Windows\"",
+        "sec-fetch-dest": "empty",
+        "sec-fetch-mode": "cors",
+        "sec-fetch-site": "same-origin",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "x-requested-with": "XMLHttpRequest"
+    }
+    url = "https://www.nseindia.com/api/chart-databyindex-dynamic"
+    params = {
+        "index": f"{stock_name}STN",
+        "type": "symbol"
+    }
+    session = requests.Session()
+    session.get(url='https://www.nseindia.com/', headers=headers, verify=False, timeout=5)
+    response = session.get(url, headers=headers, params=params, verify=False, timeout=5)
+    unclean_data = response.json()
+    clean_date_date = []
+    clean_chart_data = []
+    for data in unclean_data["grapthData"]:
+        clean_date_date.append(data[0])
+        clean_chart_data.append(str(data[1]))
+    return_data = {
+            "categories": clean_date_date,
+            "period": "1day",
+            "series": [
+                {
+                    "data": clean_chart_data,
+                    "name": "Kline"
+                }
+            ],
+            "stock": stock_name
+    }
+    return return_data
 def nes_market(stock_name):
     """
     获取行情
@@ -88,7 +131,7 @@ def nes_market(stock_name):
     }
 
     try:
-        data_now = get_india_dates()
+        data_now = get_india_dates(del_time=30)
         rise_time = data_now[0]
         terminal_time = data_now[1]
         params = {
@@ -258,7 +301,7 @@ def get_bse_stock_hitory(stock_name, stock_code):
     url = "https://charting.bseindia.com/charting/RestDataProvider.svc/getDat"
     params = {
         "exch": "N",
-        "scode": "506919",
+        "scode": stock_code,
         "type": "b",
         "mode": "bseL",
         "fromdate": f"{gen_time()}-01:01:00-AM"
@@ -300,5 +343,6 @@ def clean_date(date_unclean):
 
 if __name__ == '__main__':
     # print(get_stock_history("POBS"))
-    print(get_stockcode(stock_name="BRACEPORT"))
+    data = nes_market_realtime(stock_name="IPHL")
+    print(data)
     pass

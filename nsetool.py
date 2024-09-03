@@ -201,7 +201,6 @@ def nes_market(stock_name):
         session = requests.Session()
         session.get(url='https://www.nseindia.com/', headers=headers, verify=False, timeout=1)
         response = session.get(url, headers=headers, params=params, timeout=1)
-        print(response.json())
         unclean_data = response.json()["data"]
         clean_date_date = []
         clean_chart_data = []
@@ -255,7 +254,6 @@ def stock_trend():
 def kline():
     stock_code = request.args.get('stock_code')
     if not stock_code:
-        print(stock_code)
         return None
 
     period = request.args.get('period', '1mo')
