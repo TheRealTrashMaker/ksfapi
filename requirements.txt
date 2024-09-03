@@ -1,5 +1,7 @@
 bsedata==0.6.0
 Flask==2.2.5
 Flask_Cors==4.0.1
+lxml==5.1.0
+pandas==2.2.2
 Requests==2.32.3
 yfinance==0.2.28
