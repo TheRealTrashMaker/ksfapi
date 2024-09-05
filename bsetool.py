@@ -288,7 +288,7 @@ def get_bse_stock_hitory(stock_name, stock_code):
         "Content-Length": "0",
         "Origin": "https://charting.bseindia.com",
         "Pragma": "no-cache",
-        "Referer": "https://charting.bseindia.com/index.html?SYMBOL=506919",
+        "Referer": f"https://charting.bseindia.com/index.html?SYMBOL={stock_code}",
         "Sec-Fetch-Dest": "empty",
         "Sec-Fetch-Mode": "cors",
         "Sec-Fetch-Site": "same-origin",
@@ -306,7 +306,9 @@ def get_bse_stock_hitory(stock_name, stock_code):
         "mode": "bseL",
         "fromdate": f"{gen_time()}-01:01:00-AM"
     }
-    response = requests.post(url, headers=headers, params=params)
+    session = requests.session()
+    session.get(url="https://charting.bseindia.com",headers=headers)
+    response = session.post(url, headers=headers, params=params)
     unclean_data = json.loads(response.json()["getDatResult"])["DataInputValues"][0]
     clean_date_date = []
     unclean_date_data = unclean_data["DateData"][0]["Date"].split(",")
@@ -342,7 +344,7 @@ def clean_date(date_unclean):
 
 
 if __name__ == '__main__':
-    # print(get_stock_history("POBS"))
-    data = nes_market_realtime(stock_name="IPHL")
-    print(data)
+    print(get_stock_history("HBESD"))
+    # data = nes_market_realtime(stock_name="HBESD")
+    # print(data)
     pass

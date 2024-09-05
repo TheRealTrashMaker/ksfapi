@@ -1,3 +1,4 @@
+import logging
 import re
 import time
 from datetime import datetime
@@ -362,5 +363,6 @@ def main():
         except:
             pass
         time.sleep(60 * 60 * 3)
+
 if __name__ == "__main__":
     main()

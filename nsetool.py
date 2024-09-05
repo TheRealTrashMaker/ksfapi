@@ -304,7 +304,7 @@ def get_kline_data(stock_code, period='1mo'):
     ticker = clean_stock_code(stock_code)
     try:
         stock = yf.Ticker(ticker)
-        hist = stock.history(period=period, timeout=1)
+        hist = stock.history(period=period)
         if not hist.empty:
             # Keeping the original data structure
             return {
@@ -320,9 +320,12 @@ def get_kline_data(stock_code, period='1mo'):
             return get_stock_history(stock_code)
     except Exception as e:
         # Optionally log the error for debugging
-        import logging
-        logging.error(f"Failed to fetch data for {ticker}: {e}")
-        return {'error': str(e)}
+        try:
+            return get_stock_history(stock_code)
+        except:
+            import logging
+            logging.error(f"Failed to fetch data for {ticker}: {e}")
+            return {'error': str(e)}
 
 
 @app.route('/search_stocks', methods=['GET'])
@@ -446,4 +449,4 @@ def get_nifty50_data():
 
 if __name__ == '__main__':
     # nes_market(stock_name="BRACEPORT")
-    app.run(host='0.0.0.0', port=5599, debug=False)
+    app.run(host='0.0.0.0', port=5634, debug=False)
